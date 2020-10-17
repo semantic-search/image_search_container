@@ -1,17 +1,8 @@
-import redis
 from kafka import KafkaConsumer
 from kafka import KafkaProducer
 import globals
 import json
 
-
-# Redis initialize
-redis_obj = redis.StrictRedis(
-    host=globals.REDIS_HOSTNAME,
-    port=globals.REDIS_PORT,
-    password=globals.REDIS_PASSWORD,
-    ssl=True
-)
 
 # Kafka initialize
 consumer_obj = KafkaConsumer(

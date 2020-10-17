@@ -1,18 +1,19 @@
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.Xception import Xception, preprocess_input
-from tensorflow.keras.models import Model
+from tensorflow.keras.applications import Xception
+from tensorflow.keras.applications.xception import preprocess_input
 import numpy as np
+from PIL import Image
 
 # See https://keras.io/api/applications/ for details
 
+
 class FeatureExtractor:
     def __init__(self):
-        base_model = Xception(
+        self.model = Xception(
                         weights="imagenet",
                         classes=1000,
                         classifier_activation="softmax",
                         )
-        self.model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc1').output)
 
     def extract(self, img):
         """
@@ -23,6 +24,7 @@ class FeatureExtractor:
         Returns:
             feature (np.ndarray): deep feature with the shape=(4096, )
         """
+        img = Image.open(img)
         img = img.resize((299, 299))  # Xception must take a 299x299 img as an input
         img = img.convert('RGB')  # Make sure img is color
         x = image.img_to_array(img)  # To np.array. Height x Width x Channel. dtype=float32
