@@ -1,6 +1,6 @@
 from db_models.mongo_setup import global_init
 from db_models.models.cache_model import Cache
-from db_models.model.feature_model import Features
+from db_models.models.feature_model import Features
 import uuid
 import globals
 import init
