@@ -1,0 +1,7 @@
+Pillow
+mongoengine
+python-dotenv
+kafka-python
+mongoengine
+pyfiglet
+requests
