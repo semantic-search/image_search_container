@@ -61,15 +61,18 @@ if __name__ == "__main__":
                 for image, image_id in zip(images_array, images_id):
                     image_feature = fe.extract(image)
                     feature_to_save = pickle.dumps(image_feature)
-                    save_to_db(db_object, feature_to_save, file=images_id)
+                    save_to_db(db_object, feature_to_save, file=image_id)
                 print(".....................FINISHED PROCESSING FILE.....................")
                 update_state(file_name)
+            else:
+                print(".....................FINISHED PROCESSING FILE.....................")
 
         else:
             """image"""
             with open(file_name, 'wb') as file_to_save:
                 file_to_save.write(db_object.file.read())
             image_feature = fe.extract(file_name)
+            print("Features Extracted")
             feature_to_save = pickle.dumps(image_feature)
             file = db_object.file
             save_to_db(db_object, feature_to_save, file)
