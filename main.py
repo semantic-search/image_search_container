@@ -8,29 +8,42 @@ from feature_extractor import FeatureExtractor
 import pyfiglet
 import requests
 import pickle
+from init import err_logger
 
 
 fe = FeatureExtractor()
 global_init()
+FILE_ID = ""
 
 
 def save_to_db(db_object, feature_to_save, file):
-    print("*****************SAVING TO DB******************************")
-    feature_obj = Features()
-    feature_obj.document = db_object
-    feature_obj.feature = feature_to_save
-    feature_obj.file = file
-    feature_obj.save()
-    print("*****************SAVED TO DB******************************")
+    try:
+        print("*****************SAVING TO DB******************************")
+        print("in save")
+        feature_obj = Features()
+        feature_obj.document = db_object
+        feature_obj.feature = feature_to_save
+        feature_obj.file = file
+        feature_obj.save()
+        print("*****************SAVED TO DB******************************")
+    except Exception as e:
+        print(" ERROR IN SAVE TO DB")
+        err_logger(str(e)+" ERROR IN SAVE TO DB")
 
 
-def update_state(file):
+def update_state(file_name):
     payload = {
-        'topic_name': globals.RECEIVE_TOPIC,
-        'client_id': globals.CLIENT_ID,
-        'value': file
+        'parent_name': globals.PARENT_NAME,
+        'group_name': globals.GROUP_NAME,
+        'container_name': globals.RECEIVE_TOPIC,
+        'file_name': file_name,
+        'client_id': globals.CLIENT_ID
     }
-    requests.request("POST", globals.DASHBOARD_URL,  data=payload)
+    try:
+        requests.request("POST", globals.DASHBOARD_URL,  data=payload)
+    except Exception as e:
+        print(f"{e} EXCEPTION IN UPDATE STATE API CALL......")
+        err_logger(f"{e} EXCEPTION IN UPDATE STATE API CALL......FILE ID {FILE_ID}")
 
 
 if __name__ == "__main__":
@@ -41,11 +54,18 @@ if __name__ == "__main__":
     for message in init.consumer_obj:
         message = message.value
         db_key = str(message)
-        db_object = Cache.objects.get(pk=db_key)
-        file_name = db_object.file_name
-        print("#############################################")
-        print("########## PROCESSING FILE " + file_name)
-        print("#############################################")
+        print(db_key, 'db_key')
+        FILE_ID = db_key
+        try:
+            db_object = Cache.objects.get(pk=db_key)
+            file_name = db_object.file_name
+            print("#############################################")
+            print("########## PROCESSING FILE " + file_name)
+            print("#############################################")
+        except Exception as e:
+            print("EXCEPTION IN FETCHING FROM DATABASE......")
+            err_logger(str(e) + " EXCEPTION IN FETCHING FROM DATABASE......FILE ID " + FILE_ID)
+            continue
         if db_object.is_doc_type:
             """document"""
             if db_object.contains_images:
@@ -59,9 +79,14 @@ if __name__ == "__main__":
                     images_id.append(image.file)
                 to_save = list()
                 for image, image_id in zip(images_array, images_id):
-                    image_feature = fe.extract(image)
-                    feature_to_save = pickle.dumps(image_feature)
-                    save_to_db(db_object, feature_to_save, file=image_id)
+                    try:
+                        image_feature = fe.extract(image)
+                        feature_to_save = pickle.dumps(image_feature)
+                        save_to_db(db_object, feature_to_save, file=image_id)
+                    except Exception as e:
+                        print(str(e) + "Exception in predict")
+                        err_logger(str(e) + "Exception in predict")
+                        continue
                 print(".....................FINISHED PROCESSING FILE.....................")
                 update_state(file_name)
             else:
@@ -71,10 +96,14 @@ if __name__ == "__main__":
             """image"""
             with open(file_name, 'wb') as file_to_save:
                 file_to_save.write(db_object.file.read())
-            image_feature = fe.extract(file_name)
-            print("Features Extracted")
-            feature_to_save = pickle.dumps(image_feature)
-            file = db_object.file
-            save_to_db(db_object, feature_to_save, file)
-            print(".....................FINISHED PROCESSING FILE.....................")
-            update_state(file_name)
+            try:
+                image_feature = fe.extract(file_name)
+                print("Features Extracted")
+                feature_to_save = pickle.dumps(image_feature)
+                file = db_object.file
+                save_to_db(db_object, feature_to_save, file)
+                print(".....................FINISHED PROCESSING FILE.....................")
+                update_state(file_name)
+            except Exception as e:
+                print(str(e) + " Exception in predict")
+                err_logger(str(e) + " Exception in predict")
